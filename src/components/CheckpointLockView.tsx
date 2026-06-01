@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { CheckpointLock } from "../types";
 import { soundManager } from "../lib/sounds";
+import { localEvaluate } from "../lib/evaluator";
 
 interface CheckpointLockViewProps {
   checkpoint: CheckpointLock;
@@ -149,9 +150,19 @@ export default function CheckpointLockView({
         setFeedback(result.feedback || "DECRYPTION FAILED: Bio-intel does not satisfy cell command parameters.");
       }
     } catch (e) {
+      // Offline fallback: perform local evaluation dynamically inside the browser
+      const lockId = lockField === "coreUnlocked" ? "core" : lockField === "masteryUnlocked" ? "mastery" : "tactical";
+      const fallbackResult = localEvaluate(currentKey, lockId, textInput);
       setLoading(false);
-      soundManager.playFailure();
-      setFeedback("ERROR: System parsing failure. Server offline. Retry encryption.");
+      
+      if (fallbackResult.isCorrect) {
+        soundManager.playSuccess();
+        setFeedback(fallbackResult.feedback + " [DECRYPTED OFFLINE]");
+        updateLock(lockField, true);
+      } else {
+        soundManager.playFailure();
+        setFeedback(fallbackResult.feedback);
+      }
     }
   };
 

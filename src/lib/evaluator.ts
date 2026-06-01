@@ -1,32 +1,10 @@
-import express from "express";
-import path from "path";
-import { createServer as createViteServer } from "vite";
-import { GoogleGenAI, Type } from "@google/genai";
-import dotenv from "dotenv";
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-dotenv.config();
-
-// Initialize the Express application
-const app = express();
-app.use(express.json());
-
-const PORT = 3000;
-
-// Initialize Gemini API client if API key is present
-let ai: GoogleGenAI | null = null;
-if (process.env.GEMINI_API_KEY) {
-  ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      }
-    }
-  });
-}
-
-// Local evaluation fallback and guidelines helper
-function localEvaluate(checkpointId: string, lockId: string, answer: string): { isCorrect: boolean; feedback: string } {
+// Shared client-side biological answer evaluator to support standalone/offline mode
+export function localEvaluate(checkpointId: string, lockId: string, answer: string): { isCorrect: boolean; feedback: string } {
   const norm = answer.toLowerCase().trim();
 
   if (checkpointId === "alpha") {
@@ -193,101 +171,3 @@ function localEvaluate(checkpointId: string, lockId: string, answer: string): { 
     feedback: "DECRYPTION FAILED: Input too brief. Please supply complete bio-tactical justifications."
   };
 }
-
-// API endpoint for evaluating biology response
-app.post("/api/evaluate-answer", async (req, res) => {
-  try {
-    const { checkpointId, lockId, question, userAnswer } = req.body;
-
-    if (!checkpointId || !lockId || !userAnswer) {
-      return res.status(400).json({ error: "Missing required parameters: checkpointId, lockId, and userAnswer." });
-    }
-
-    // Rely on local evaluation directly to be snappy first
-    const fallback = localEvaluate(checkpointId, lockId, userAnswer);
-
-    // If Gemini client is activated, let it review open-ended answers for high-quality grading!
-    if (ai) {
-      try {
-        const p = `
-You are the Tactical HUD Command Core of "OPERATION MICRO-HUD: BIOLOGY TACTICAL BOOTCAMP".
-Your duty is to evaluate whether an operative's answer correctly satisfies the biology checkpoint instruction.
-
-Checkpoint: ${checkpointId.toUpperCase()}
-Lock: ${lockId.toUpperCase()}
-Biology Question Context: "${question}"
-Operative's Input Answer: "${userAnswer}"
-
-Criteria:
-- Evaluate the answer based on fundamental High School and GCSE Biology concepts.
-- Give the player passing credit (isCorrect = true) if they understand the core concept, even if there are small typos.
-- The tone must be a realistic sci-fi cybernetic militaristic HUD assistant. Style the "feedback" with capital keywords or tactical status terms (e.g. "CRITICAL ENZYMATIC PROCESS NOT FOUND", "SECTOR DECRYPTED").
-- Keep the feedback concise: exactly 2 sentences maximum.
-
-Respond STRICTLY with a valid JSON document resembling this structure. No markdown wrappers except perhaps standard raw string, but ideal is raw JSON output.
-{
-  "isCorrect": boolean,
-  "feedback": "Your high-tech tactical HUD assessment feedback string."
-}
-        `;
-
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: p,
-          config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                isCorrect: { type: Type.BOOLEAN, description: "Whether the answer is biologically correct." },
-                feedback: { type: Type.STRING, description: "Sci-fi tactical evaluation of the answer." }
-              },
-              required: ["isCorrect", "feedback"]
-            }
-          }
-        });
-
-        if (response.text) {
-          try {
-            const result = JSON.parse(response.text.trim());
-            return res.json(result);
-          } catch (e) {
-            console.warn("[BIO-HUD BACKEND] Failed to parse Gemini JSON response, utilizing local fallback:", e);
-          }
-        }
-      } catch (geminiError: any) {
-        // Log as a warning rather than throwing to stderr, to gracefully acknowledge local fallback mode
-        console.warn("[BIO-HUD BACKEND] Gemini API is currently unavailable or denied access. Switching to local offline evaluator fallback.");
-      }
-    }
-
-    // fallback standard behavior
-    return res.json(fallback);
-  } catch (err: any) {
-    console.warn("[BIO-HUD BACKEND] Server API evaluation warning:", err);
-    res.status(500).json({ error: "Failed to evaluate answer. Tactical system offline." });
-  }
-});
-
-// Setup Vite development backend or production static file serving
-async function setupServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[MICRO-HUD LOGS] Combat Server listening on port ${PORT}`);
-  });
-}
-
-setupServer();
