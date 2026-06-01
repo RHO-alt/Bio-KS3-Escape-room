@@ -1,0 +1,6 @@
+{
+  "name": "Operation Micro-HUD: Biology Tactical Bootcamp",
+  "description": "An interactive, sci-fi themed biology escape room where players solve checkpoints using cellular biology data, microscope math, and cellular adaptations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

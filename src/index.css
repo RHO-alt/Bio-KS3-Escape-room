@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+body {
+  font-family: "Lora", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  background-color: #050505;
+  color: #e7e5e4; /* stone-200 */
+}
+
+/* Immersive UI radial gradient helper CSS */
+.immersive-radial {
+  background: radial-gradient(circle at 50% 50%, #15161c 0%, #050505 100%);
+}
+
+.immersive-glow-amber {
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.55);
+}
+
+.immersive-glow-cyan {
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.45);
+}
+
+.immersive-glow-red {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.immersive-glow-green {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+}
+
+.immersive-shadow-inner {
+  box-shadow: inset 0 2px 8px 0 rgba(0, 0, 0, 0.82);
+}
+
+/* Elegant scrollbar tweaks for the immersive file tree and sidebars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.35);
+}
