@@ -138,6 +138,10 @@ export default function CheckpointLockView({
         })
       });
 
+      if (!resp.ok) {
+        throw new Error("API server is offline or returned an error status.");
+      }
+
       const result = await resp.json();
       setLoading(false);
 
