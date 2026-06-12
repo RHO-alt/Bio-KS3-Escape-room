@@ -126,48 +126,22 @@ export default function CheckpointLockView({
     setFeedback("DECRYPTING DATA STREAMS... PARSING BIOLOGICAL HOMOLOGY CODES...");
     keypadTap();
 
-    try {
-      const resp = await fetch("/api/evaluate-answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          checkpointId: currentKey,
-          lockId: lockField === "coreUnlocked" ? "core" : lockField === "masteryUnlocked" ? "mastery" : "tactical",
-          question: questionContext,
-          userAnswer: textInput
-        })
-      });
+    // Perform local evaluation directly for standalone mode
+    const lockId = lockField === "coreUnlocked" ? "core" : lockField === "masteryUnlocked" ? "mastery" : "tactical";
+    const result = localEvaluate(currentKey, lockId, textInput);
 
-      if (!resp.ok) {
-        throw new Error("API server is offline or returned an error status.");
-      }
-
-      const result = await resp.json();
+    // Artificial delay to simulate "decryption" feel
+    setTimeout(() => {
       setLoading(false);
-
       if (result.isCorrect) {
         soundManager.playSuccess();
         setFeedback(result.feedback);
         updateLock(lockField, true);
       } else {
         soundManager.playFailure();
-        setFeedback(result.feedback || "DECRYPTION FAILED: Bio-intel does not satisfy cell command parameters.");
+        setFeedback(result.feedback);
       }
-    } catch (e) {
-      // Offline fallback: perform local evaluation dynamically inside the browser
-      const lockId = lockField === "coreUnlocked" ? "core" : lockField === "masteryUnlocked" ? "mastery" : "tactical";
-      const fallbackResult = localEvaluate(currentKey, lockId, textInput);
-      setLoading(false);
-      
-      if (fallbackResult.isCorrect) {
-        soundManager.playSuccess();
-        setFeedback(fallbackResult.feedback + " [DECRYPTED OFFLINE]");
-        updateLock(lockField, true);
-      } else {
-        soundManager.playFailure();
-        setFeedback(fallbackResult.feedback);
-      }
-    }
+    }, 800);
   };
 
   // CHECKPOINT ALPHA SUBMISSIONS
